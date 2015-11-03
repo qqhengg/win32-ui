@@ -6,15 +6,16 @@
 BOOL CALLBACK DlgProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam); 
 
 // Global variables.
-HINSTANCE hInst;
-HWND hDlg;
-HDC hdc;                          // device context  
+HINSTANCE   hInst;
+HWND        hDlg;
+HWND        hwDlg;
+HDC         hdc;                          // device context  
 PAINTSTRUCT ps;                   // client area paint info 
 
-HCURSOR hCurs;     
-HICON   hIcon;
-HBITMAP hBitmap;    
-BOOL    Ret;
+HCURSOR     hCurs;     
+HICON       hIcon;
+HBITMAP     hBitmap;    
+BOOL        Ret;
 
 void ImportRes(void)
 {
@@ -208,13 +209,23 @@ BOOL CALLBACK DlgProc(HWND hwndDlg,
 		{ 
 		case IDOK: 
 		case IDCANCEL: 
-			EndDialog(hwndDlg, wParam); 
+			//EndDialog(hwndDlg, wParam); //model dialog
+			DestroyWindow(hwndDlg); //modeless dialog
 			return TRUE; 
+		case IDC_COMBO:
+		case IDC_EDIT:
+		case IDC_BUTTON:
+			return FALSE;
 		} 
+		return FALSE;
 
-	case WM_DESTROY:
-		PostQuitMessage(0);	
-		break; 
+	case WM_USER+10:
+		MessageBox(NULL, TEXT("Received message from father!"), TEXT("Warning"), MB_OK);
+		return TRUE;
+
+	case WM_CHAR:
+		MessageBox(NULL, TEXT("Dialog key down"), TEXT("Demo"), MB_OK);
+		return TRUE;
 
 	} 
 	return FALSE; 
@@ -225,11 +236,13 @@ LONG CALLBACK WndProc(HWND hwnd, UINT message, UINT wParam, LONG lParam)
 	switch (message) 
 	{ 
 	case WM_CREATE: 
-		HWND hWnd;
-		hWnd = CreateDialog(hInst, MAKEINTRESOURCE(IDD_DIALOG), hwnd, (DLGPROC)DlgProc);
-		ShowWindow(hWnd, SW_SHOW);
+		hwDlg = CreateDialog(hInst, MAKEINTRESOURCE(IDD_DIALOG), hwnd, (DLGPROC)DlgProc);
+		ShowWindow(hwDlg, SW_SHOW);
 		ShowWindow(hDlg, SW_SHOW);
+		// "WM_USER+1" maybe confilict.
+		SendMessage(hDlg, WM_USER+10, NULL, NULL);
 		break;
+
 	case WM_PAINT: 
 		// Draw all the characters in the buffer, line by line.
 		hdc = BeginPaint(hwnd, &ps); 
@@ -244,6 +257,7 @@ LONG CALLBACK WndProc(HWND hwnd, UINT message, UINT wParam, LONG lParam)
 		}
 		EndPaint(hwnd, &ps); 
 		break;
+
 	case WM_SETFOCUS: 
 		// Create the caret. 
 		CreateCaret(hwnd, hBitmap, 2, 10); 
@@ -256,6 +270,8 @@ LONG CALLBACK WndProc(HWND hwnd, UINT message, UINT wParam, LONG lParam)
 	case WM_KILLFOCUS: 
 		// The window is losing the input focus, so destroy the caret. 
 		DestroyCaret(); 
+		// The window is losing the input focus, so destroy the Cursor. 
+		DestroyCursor(hCurs);
 		break; 
 
 	case WM_SETCURSOR:  
@@ -270,11 +286,16 @@ LONG CALLBACK WndProc(HWND hwnd, UINT message, UINT wParam, LONG lParam)
 		break;
 
 	case WM_DESTROY:
-		PostQuitMessage(0);	
+		PostQuitMessage(0);	//The application including the dialog will be terminated.
 		break; 
 
 	case WM_COMMAND: 	
+		MessageBox(NULL, TEXT("Window command"), TEXT("Demo"), MB_OK);
 		break; 
+
+	case WM_CHAR:
+		MessageBox(NULL, TEXT("Window key down"), TEXT("Demo"), MB_OK);
+		return TRUE;
 
 	default: 
 		return DefWindowProc(hwnd, message, wParam, lParam); 
@@ -302,13 +323,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 	wndClass.hCursor        = LoadCursor(NULL, IDC_ARROW);
 	wndClass.hbrBackground  = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wndClass.lpszMenuName   = NULL;
-	wndClass.lpszClassName  = TEXT("GettingStarted");
+	wndClass.lpszClassName  = TEXT("Window");
 
 	RegisterClass(&wndClass);
 
 	hWnd = CreateWindow(
-		TEXT("GettingStarted"),   // window class name
-		TEXT("Getting Started"),  // window caption
+		TEXT("Window"),           // window class name
+		TEXT("Window"),           // window caption
 		WS_OVERLAPPEDWINDOW,      // window style
 		CW_USEDEFAULT,            // initial x position
 		CW_USEDEFAULT,            // initial y position
@@ -322,27 +343,26 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);
 
-	/*while(GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}*/
-	{
-		BOOL bRet;
+	BOOL bRet;
 
-		while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0) 
-		{ 
-			if (bRet == -1)
-			{
-				// Handle the error and possibly exit
-			}
-			else if (!IsWindow(hDlg) || !IsDialogMessage(hDlg, &msg)) 
-			{ 
-				TranslateMessage(&msg); 
-				DispatchMessage(&msg); 
-			} 
+	while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0) 
+	{ 
+		if (bRet == -1)
+		{
+			// Handle the error and possibly exit
 		}
+		else if (\
+			!IsWindow(hDlg) ||\
+			!IsDialogMessage(hDlg, &msg) ||\
+			!IsWindow(hwDlg) ||\
+			!IsDialogMessage(hwDlg, &msg)\
+			) 
+		{ 
+			TranslateMessage(&msg); 
+			DispatchMessage(&msg); 
+		} 
 	}
+
 	return msg.wParam;
 }
 
