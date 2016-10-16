@@ -215,6 +215,7 @@ BOOL CALLBACK DlgProc(HWND hwndDlg,
 		case IDC_COMBO:
 		case IDC_EDIT:
 		case IDC_BUTTON:
+		case IDC_CHECK1:
 			return FALSE;
 		} 
 		return FALSE;
