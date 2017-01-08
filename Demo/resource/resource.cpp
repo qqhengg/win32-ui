@@ -2,7 +2,7 @@
 #include <gdiplus.h>
 #include "resource.h"
 #include "resource1.h"
-
+ 
 BOOL CALLBACK DlgProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam); 
 
 // Global variables.
